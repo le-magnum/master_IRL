@@ -1,0 +1,14 @@
+#colors
+blue: 0
+#goal
+++++
++ 0+
+++++
+#end
+trajectory:0=[
+++++
++0 +
+++++
+Move(E)
+
+]
