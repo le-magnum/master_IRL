@@ -181,7 +181,6 @@ public class Parser
             ++row;
 
         }
-        System.err.println(goals[2][1]);
     }
 
     public State parseState(StringBuilder stringBuilder)

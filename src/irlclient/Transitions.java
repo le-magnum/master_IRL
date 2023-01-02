@@ -16,6 +16,9 @@ public class Transitions
         int numberOfAgents = currentState.agentRows.size();
         HashMap<Integer, Action> jointActions = new HashMap<>();
         for (int i = 0; i < numberOfAgents; i++) {
+            if (!(currentState.isApplicable(i,wantedAction))){
+                return currentState;
+            }
             jointActions.put(i,wantedAction);
         }
         State newState = new State(currentState,jointActions);

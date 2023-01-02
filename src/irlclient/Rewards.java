@@ -2,15 +2,15 @@ package irlclient;
 
 public class Rewards
 {
-  public int[] weights;
+  public double[] weights;
 
 
-  public Rewards(int[] weights){
+  public Rewards(double[] weights){
     this.weights = weights;
   }
 
-  public int calculateRewards(int[] features){
-    int reward = 0;
+  public double calculateRewards(int[] features){
+    double reward = 0;
     for (int i = 0; i < features.length; i++) {
       reward += weights[i] * features[i];
     }
@@ -19,7 +19,7 @@ public class Rewards
 
   public void updateWeights(double[] newWeights){
     for (int i = 0; i < newWeights.length; i++) {
-      this.weights[i] = (int)newWeights[i];
+      this.weights[i] = newWeights[i];
     }
   }
 }

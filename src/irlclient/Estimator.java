@@ -2,8 +2,7 @@ package irlclient;
 
 import java.util.*;
 
-public class Estimator
-{
+public class Estimator {
     private Rewards rewards;
 
     private ValueIteration vl = new ValueIteration();
@@ -30,14 +29,13 @@ public class Estimator
     private HashMap<Trajectory, Double> trajectoryProbability = new HashMap<>();
 
 
-    public Rewards maximumLikelihoodEstimation(Trajectory[] trajectories)
-    {
+    public Rewards maximumLikelihoodEstimation(Trajectory[] trajectories) {
         vl.fillListOfStates(trajectories[0].getStates()[0]);
         HashSet<State> states = vl.getSet();
 
         double gemma = 1;
         double boltzTemp = 1;
-        int[] rewardWeights = new int[3];
+        double[] rewardWeights = new double[3];
         int[] stateFeatures = new int[3];
         //normal field
         rewardWeights[0] = 0;
@@ -46,11 +44,13 @@ public class Estimator
         //agent goal
         rewardWeights[2] = 0;
         rewards = new Rewards(rewardWeights);
-        int n = 4;
+        int n = 50;
         int k = 5;
         double[] likelihoodWeights = new double[rewardWeights.length];
         double learningRate = 1;
         setupEstimationTables(states, rewards, stateFeatures);
+        double previousLikelihood = -1000;
+        double logLikelihood = 0;
         System.err.println("this is estimator function");
         calculateProbabilitiesOfTrajectories(trajectories);
 
@@ -60,23 +60,19 @@ public class Estimator
                 for (StateActionPair pair : pairs) {
                     // first let calculate Q_i(s,a)
                     double stateEstimation;
-                    int reward = rewards.calculateRewards(pair.getState()
-                                                              .extractFeatures(new int[stateFeatures.length]));
+                    double reward = rewards.calculateRewards(pair.getState()
+                            .extractFeatures(new int[stateFeatures.length]));
                     int transition = transitions.transitionFunction(pair.getState(), pair.getAction(), 0);
                     if (transition == 0) {
                         stateEstimation = reward;
-                    } else if (pair.getState().isGoalStateWithoutBoxes()) {
-                        stateEstimation = 0;
-
-                    } else {
-                        stateEstimation = reward +
-                                          gemma *
-                                          transition *
-                                          valueEstimations.get(transitions.nextState(pair.getState(),
-                                                                                     pair.getAction()));
                     }
+                    State nextState = transitions.nextState(pair.getState(), pair.getAction());
+                    stateEstimation = reward + gemma * transition *
+                            valueEstimations.get(transitions.nextState(pair.getState(),
+                                    pair.getAction()));
                     qEstimations.put(pair, stateEstimation);
                 }
+
 
                 for (Map.Entry<StateActionPair, Double> pair : qEstimations.entrySet()) {
                     // secondly let calculate dQ_i(s,a)/dw_j
@@ -84,19 +80,20 @@ public class Estimator
                     for (int j = 0; j < stateFeatures.length; j++) {
                         int feature = pair.getKey().getState().extractFeatures(new int[stateFeatures.length])[j];
                         int tran = transitions.transitionFunction(pair.getKey().getState(),
-                                                                  pair.getKey().getAction(),
-                                                                  0);
+                                pair.getKey().getAction(),
+                                0);
                         if (tran == 0) {
                             differentiatedEstimationsOnWeight[j] = feature;
                             continue;
                         }
                         double nextValue = valueDifferentiated.get(transitions.nextState(pair.getKey().getState(),
-                                                                                     pair.getKey().getAction()))[j];
+                                pair.getKey().getAction()))[j];
 
                         differentiatedEstimationsOnWeight[j] = feature + gemma * tran * nextValue;
                     }
                     estimationDifferentiated.put(pair.getKey(), differentiatedEstimationsOnWeight);
                 }
+
 
                 for (Map.Entry<StateActionPair, Double> pair : qEstimations.entrySet()) {
                     // then the distribution sample Z_i(s)
@@ -110,13 +107,14 @@ public class Estimator
 
                 for (Map.Entry<State, Double> pair : zValues.entrySet()) {
                     // then distribution sample differentiated
-                    double[] differentiatedZVal = this.zValuesDifferentiated.get(pair.getKey());
+                    double[] differentiatedZVal = new double[stateFeatures.length];
                     for (int j = 0; j < stateFeatures.length; j++) {
                         for (Action action : Action.values()) {
                             StateActionPair stateActionPair = new StateActionPair(pair.getKey(), action);
-                            differentiatedZVal[j] += boltzTemp *
-                                                     Math.exp(boltzTemp * qEstimations.get(stateActionPair)) *
-                                                     estimationDifferentiated.get(stateActionPair)[j];
+                            double diffZVal = boltzTemp *
+                                    Math.exp(boltzTemp * qEstimations.get(stateActionPair)) *
+                                    estimationDifferentiated.get(stateActionPair)[j];
+                            differentiatedZVal[j] += diffZVal;
                         }
                     }
                     this.zValuesDifferentiated.put(pair.getKey(), differentiatedZVal);
@@ -124,7 +122,7 @@ public class Estimator
                 for (Map.Entry<StateActionPair, Double> pair : qEstimations.entrySet()) {
                     // the policy $\pi(s,a)$
                     double policyValue = Math.exp(boltzTemp * qEstimations.get(pair.getKey())) /
-                                         zValues.get(pair.getKey().getState());
+                            zValues.get(pair.getKey().getState());
                     policyValues.put(pair.getKey(), policyValue);
                 }
 
@@ -137,7 +135,7 @@ public class Estimator
                         double exp = Math.exp(boltzTemp * qEstimations.get(pair.getKey()));
                         double qDiff = estimationDifferentiated.get(pair.getKey())[j];
                         policyDifferentiated.get(pair.getKey())[j] = (boltzTemp * zValue * exp * qDiff -
-                                                                     exp * zDiff) / Math.pow(zValue, 2);
+                                exp * zDiff) / Math.pow(zValue, 2);
 
                     }
                 }
@@ -148,11 +146,7 @@ public class Estimator
                     for (Action action : Action.values()) {
                         StateActionPair permutation = new StateActionPair(pair.getKey(), action);
                         double newValue = this.policyValues.get(permutation) * qEstimations.get(permutation);
-                        if (permutation.getState().isGoalStateWithoutBoxes()){
-                            valueEstimations.put(pair.getKey(),0.0);
-                        }else {
-                            valueEstimations.put(pair.getKey(), previousValue + newValue);
-                        }
+                        valueEstimations.put(pair.getKey(), previousValue + newValue);
                     }
                 }
                 for (State state : states) {
@@ -164,8 +158,8 @@ public class Estimator
                         for (Action action : Action.values()) {
                             StateActionPair permutation = new StateActionPair(state, action);
                             vdfWeight += qEstimations.get(permutation) * policyDifferentiated.get(permutation)[j] +
-                                         this.policyValues.get(permutation) *
-                                         estimationDifferentiated.get(permutation)[j];
+                                    this.policyValues.get(permutation) *
+                                            estimationDifferentiated.get(permutation)[j];
                         }
                         values[j] = vdfWeight;
                     }
@@ -173,13 +167,12 @@ public class Estimator
                 }
 
                 // then the log likelihood
-                double logLikelihood = 0;
                 for (int j = 0; j < trajectories.length; j++) {
                     // TODO: 13/12/2022 calculate for each trajectory the policy of seeing this state action pair
                     Double policyV = 0.0;
                     for (int l = 0; l < trajectories[j].getActions().length; l++) {
                         StateActionPair trajectoryPair = new StateActionPair(trajectories[j].getStates()[l],
-                                                                             trajectories[j].getActions()[l]);
+                                trajectories[j].getActions()[l]);
 
                         policyV += Math.log(this.policyValues.get(trajectoryPair));
                     }
@@ -194,16 +187,19 @@ public class Estimator
                         double policyChainRule = 0;
                         for (int l = 0; l < trajectories[g].getActions().length; l++) {
                             StateActionPair trajectoryPair = new StateActionPair(trajectories[g].getStates()[l],
-                                                                                 trajectories[g].getActions()[l]);
+                                    trajectories[g].getActions()[l]);
                             policyChainRule += 1 / this.policyValues.get(trajectoryPair) *
-                                               policyDifferentiated.get(trajectoryPair)[j];
+                                    policyDifferentiated.get(trajectoryPair)[j];
 
                         }
                         likelihoodDifferentiated = policyChainRule * trajectoryProbability.get(trajectories[g]);
                     }
-                    likelihoodWeights[j] = likelihoodDifferentiated;
+                    //if (logLikelihood >= previousLikelihood) {
+                        likelihoodWeights[j] = likelihoodDifferentiated;
+                        previousLikelihood = logLikelihood;
+                 //   }
                 }
-
+                logLikelihood = 0;
             }
             for (int i = 0; i < rewardWeights.length; i++) {
                 likelihoodWeights[i] = likelihoodWeights[i] * learningRate;
@@ -213,27 +209,20 @@ public class Estimator
         return rewards;
     }
 
-    private void setupEstimationTables(HashSet<State> states, Rewards rewards, int[] features)
-    {
+    private void setupEstimationTables(HashSet<State> states, Rewards rewards, int[] features) {
         System.err.println("this is setup function");
         for (State state : states) {
             double[] individualFeatures = new double[features.length];
             for (Action action : Action.values()) {
                 StateActionPair pair = new StateActionPair(state, action);
                 pairs.add(pair);
-                this.qEstimations.put(pair,
-                                      (double) rewards.calculateRewards(state.extractFeatures(new int[features.length])));
+                this.qEstimations.put(pair, rewards.calculateRewards(state.extractFeatures(new int[features.length])));
                 this.estimationDifferentiated.put(pair, new double[features.length]);
                 this.policyDifferentiated.put(pair, new double[features.length]);
                 this.policyValues.put(pair, 0.0);
             }
-            if (state.isGoalStateWithoutBoxes()) {
-                this.valueEstimations.put(state, 0.0);
-            }
-            {
-                this.valueEstimations.put(state,
-                                          (double) rewards.calculateRewards(state.extractFeatures(new int[features.length])));
-            }
+
+            this.valueEstimations.put(state, rewards.calculateRewards(state.extractFeatures(new int[features.length])));
             this.zValuesDifferentiated.put(state, new double[features.length]);
             int j = 0;
             features = state.extractFeatures(new int[features.length]);
@@ -245,8 +234,7 @@ public class Estimator
         }
     }
 
-    private void calculateProbabilitiesOfTrajectories(Trajectory[] trajectories)
-    {
+    private void calculateProbabilitiesOfTrajectories(Trajectory[] trajectories) {
         for (int i = 0; i < trajectories.length; i++) {
             double probability = 1;
             for (int j = 1; j < trajectories.length; j++) {

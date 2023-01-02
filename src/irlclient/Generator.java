@@ -12,7 +12,7 @@ public class Generator
 
     ValueIteration vl = new ValueIteration();
 
-    private Writer writer = new Writer("/Users/magnus/Coding/mavis/data/trajectories.txt");
+    private Writer writer = new Writer("/Users/magnus/Coding/master/data/trajectories.txt");
 
     private Random random = new Random();
 

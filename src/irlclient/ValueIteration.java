@@ -85,7 +85,7 @@ public class ValueIteration
     {
         double gemma = 0.8;
         double theta = 0.001;
-        int[] rewardWeights = new int[3];
+        double[] rewardWeights = new double[3];
         int[] stateFeatures;
         rewardWeights[0] = 0;
         rewardWeights[1] = -1;
@@ -100,7 +100,7 @@ public class ValueIteration
             for (State state : set) {
                 for (Action action : Action.values()) {
                     stateFeatures = state.extractFeatures(new int[3]);
-                    int rewardOfStateAndAction = rewards.calculateRewards(stateFeatures);
+                    double rewardOfStateAndAction = rewards.calculateRewards(stateFeatures);
                     int t = transitions.transitionFunction(state, action, 0);
                     if (t == 0) {
                         continue;
@@ -115,13 +115,16 @@ public class ValueIteration
                     lastValue = max(value, lastValue);
 
                 }
+                /*
                 if (state.isGoalStateWithoutBoxes()){
-                    nextValueMap.put(state,(float)1.0);
+                    nextValueMap.put(state,(float)rewardWeights[2]);
                     System.err.println("for goal state : " + "\n" + state);
                 }
                 else {
                     nextValueMap.put(state, (float) lastValue);
                 }
+                 */
+                nextValueMap.put(state,(float) lastValue);
                 System.err.println("float value: " + lastValue);
                 System.err.println("for state : " + "\n" + state);
                 delta = max(delta,nextValueMap.get(state) - valueMap.get(state));

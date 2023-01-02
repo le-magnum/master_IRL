@@ -15,7 +15,7 @@ import java.util.List;
 public class Reader
 {
 
-    private Path path = Paths.get("/Users/magnus/Coding/mavis/data/trajectories.txt");
+    private Path path = Paths.get("/Users/magnus/Coding/master/data/trajectories.txt");
 
     private StringBuilder builder = new StringBuilder();
 
@@ -32,7 +32,7 @@ public class Reader
         int statesAndActionsCounter = 0;
         int headerlines = 0;
         int g = 0;
-        ArrayList<Integer> amountOfStatesAndActions = new ArrayList<>(Collections.nCopies(10,0));
+        ArrayList<Integer> amountOfStatesAndActions = new ArrayList<>(Collections.nCopies(100,0));
         List<String> readTrajectories = Files.readAllLines(path);
         parser.readColorHeader(readTrajectories);
 
