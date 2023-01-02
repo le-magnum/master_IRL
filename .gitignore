@@ -10,3 +10,10 @@ out
 
 #Ds store
 .DS_Store
+
+*.class
+
+.idea/
+
+*.iml
+
