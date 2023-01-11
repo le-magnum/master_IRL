@@ -32,7 +32,7 @@ public class Reader
         int statesAndActionsCounter = 0;
         int headerlines = 0;
         int g = 0;
-        ArrayList<Integer> amountOfStatesAndActions = new ArrayList<>(Collections.nCopies(100,0));
+        ArrayList<Integer> amountOfStatesAndActions = new ArrayList<>(Collections.nCopies(200,0));
         List<String> readTrajectories = Files.readAllLines(path);
         parser.readColorHeader(readTrajectories);
 

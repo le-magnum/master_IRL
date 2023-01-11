@@ -33,21 +33,21 @@ public class Estimator {
         vl.fillListOfStates(trajectories[0].getStates()[0]);
         HashSet<State> states = vl.getSet();
 
-        double gemma = 1;
-        double boltzTemp = 1;
+        double gemma = 0.8;
+        double boltzTemp = 0.75;
         double[] rewardWeights = new double[3];
         int[] stateFeatures = new int[3];
         //normal field
         rewardWeights[0] = 0;
         //box goal
-        rewardWeights[1] = 0;
+        rewardWeights[1] = -1;
         //agent goal
-        rewardWeights[2] = 0;
+        rewardWeights[2] = 1;
         rewards = new Rewards(rewardWeights);
-        int n = 50;
-        int k = 5;
+        int n = 30;
+        int k = 40;
         double[] likelihoodWeights = new double[rewardWeights.length];
-        double learningRate = 1;
+        double stepSize = 1;
         setupEstimationTables(states, rewards, stateFeatures);
         double previousLikelihood = -1000;
         double logLikelihood = 0;
@@ -66,16 +66,17 @@ public class Estimator {
                     if (transition == 0) {
                         stateEstimation = reward;
                     }
-                    State nextState = transitions.nextState(pair.getState(), pair.getAction());
-                    stateEstimation = reward + gemma * transition *
-                            valueEstimations.get(transitions.nextState(pair.getState(),
-                                    pair.getAction()));
+                    else {
+                        stateEstimation = reward + gemma * transition *
+                                valueEstimations.get(transitions.nextState(pair.getState(),
+                                        pair.getAction()));
+                    }
                     qEstimations.put(pair, stateEstimation);
                 }
 
 
                 for (Map.Entry<StateActionPair, Double> pair : qEstimations.entrySet()) {
-                    // secondly let calculate dQ_i(s,a)/dw_j
+                    // secondly calculate dQ_i(s,a)/dw_j
                     double[] differentiatedEstimationsOnWeight = new double[stateFeatures.length];
                     for (int j = 0; j < stateFeatures.length; j++) {
                         int feature = pair.getKey().getState().extractFeatures(new int[stateFeatures.length])[j];
@@ -90,6 +91,7 @@ public class Estimator {
                                 pair.getKey().getAction()))[j];
 
                         differentiatedEstimationsOnWeight[j] = feature + gemma * tran * nextValue;
+                        System.err.println();
                     }
                     estimationDifferentiated.put(pair.getKey(), differentiatedEstimationsOnWeight);
                 }
@@ -113,7 +115,7 @@ public class Estimator {
                             StateActionPair stateActionPair = new StateActionPair(pair.getKey(), action);
                             double diffZVal = boltzTemp *
                                     Math.exp(boltzTemp * qEstimations.get(stateActionPair)) *
-                                    estimationDifferentiated.get(stateActionPair)[j];
+                                    valueDifferentiated.get(transitions.nextState(stateActionPair.getState(),stateActionPair.getAction()))[j];
                             differentiatedZVal[j] += diffZVal;
                         }
                     }
@@ -160,6 +162,7 @@ public class Estimator {
                             vdfWeight += qEstimations.get(permutation) * policyDifferentiated.get(permutation)[j] +
                                     this.policyValues.get(permutation) *
                                             estimationDifferentiated.get(permutation)[j];
+                            System.err.println();
                         }
                         values[j] = vdfWeight;
                     }
@@ -190,27 +193,27 @@ public class Estimator {
                                     trajectories[g].getActions()[l]);
                             policyChainRule += 1 / this.policyValues.get(trajectoryPair) *
                                     policyDifferentiated.get(trajectoryPair)[j];
-
+                            System.err.println("");
                         }
                         likelihoodDifferentiated = policyChainRule * trajectoryProbability.get(trajectories[g]);
                     }
-                    //if (logLikelihood >= previousLikelihood) {
+                    //if (logLikelihood >= previousLikelihood && logLikelihood != 0) {
                         likelihoodWeights[j] = likelihoodDifferentiated;
                         previousLikelihood = logLikelihood;
-                 //   }
+                    //}
                 }
                 logLikelihood = 0;
             }
             for (int i = 0; i < rewardWeights.length; i++) {
-                likelihoodWeights[i] = likelihoodWeights[i] * learningRate;
+                likelihoodWeights[i] = likelihoodWeights[i] * stepSize;
             }
             rewards.updateWeights(likelihoodWeights);
         }
+        clearTables();
         return rewards;
     }
 
     private void setupEstimationTables(HashSet<State> states, Rewards rewards, int[] features) {
-        System.err.println("this is setup function");
         for (State state : states) {
             double[] individualFeatures = new double[features.length];
             for (Action action : Action.values()) {
@@ -237,7 +240,7 @@ public class Estimator {
     private void calculateProbabilitiesOfTrajectories(Trajectory[] trajectories) {
         for (int i = 0; i < trajectories.length; i++) {
             double probability = 1;
-            for (int j = 1; j < trajectories.length; j++) {
+            for (int j = i+1; j < trajectories.length; j++) {
                 if (trajectories[i].equals(trajectories[j])) {
                     probability++;
                 }
@@ -247,6 +250,19 @@ public class Estimator {
             }
 
         }
+    }
+
+    private void clearTables(){
+        this.valueEstimations.clear();
+        this.valueDifferentiated.clear();
+        this.qEstimations.clear();
+        this.estimationDifferentiated.clear();
+        this.zValues.clear();
+        this.zValuesDifferentiated.clear();
+        this.pairs.clear();
+        this.trajectoryProbability.clear();
+        this.policyValues.clear();
+        this.policyDifferentiated.clear();
     }
 }
 

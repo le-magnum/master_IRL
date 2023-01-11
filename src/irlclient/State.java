@@ -351,8 +351,8 @@ public class State
         int destRowBox;
         int destColBox;
         switch (action.type) {
-        //    case NoOp:
-          //      return true;
+            case NoOp:
+                return true;
 
             case Move:
                 destRowAgent = agentRow + action.agentRowDelta;

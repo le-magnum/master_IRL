@@ -58,21 +58,15 @@ public class StateActionPair
     @Override
     public boolean equals(Object o) {
         if (o == this) {
-            System.err.println("this was tiggered");
             return true;
         }
         if (!(o instanceof StateActionPair)) {
-            System.err.println("this was tiggered!");
             return false;
         }
 
         StateActionPair other = (StateActionPair) o;
         if (this.state.hashCode() == other.state.hashCode()){
-            System.err.println("this was tiggered!!");
             if (this.action == other.action){
-                System.err.println("this was tiggered!!!");
-                System.err.println(this.state.toString());
-                System.err.println(other.state.toString());
                 return true;
             }
         }

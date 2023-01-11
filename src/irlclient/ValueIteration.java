@@ -87,9 +87,9 @@ public class ValueIteration
         double theta = 0.001;
         double[] rewardWeights = new double[3];
         int[] stateFeatures;
-        rewardWeights[0] = 0;
-        rewardWeights[1] = -1;
-        rewardWeights[2] = 1;
+        rewardWeights[0] = 1.7;
+        rewardWeights[1] = -0.013;
+        rewardWeights[2] = 2;
         double lastValue = -10000;
         rewards = new Rewards(rewardWeights);
         setupValueFunction();

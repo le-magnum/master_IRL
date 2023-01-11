@@ -41,7 +41,9 @@ public class Generator
 
         String solution = "";
         vl.calculateValueIteration();
-        State[] states = new State[9];
+        State[] states = new State[50];
+        int startCoordinateRow = originalState.agentRows.get(0);
+        int startCoordinateCol = originalState.agentCols.get(0);
         int i = 0;
         while (i < amountOfTrajectories){
             int stepsInSolution = 0;
@@ -58,13 +60,15 @@ public class Generator
                 stepsInSolution++;
             }
             writer.addEntry(i,solution,states);
-
+            /*
             int r = random.nextInt(1,originalState.walls.length-1);
             int c = random.nextInt(1, originalState.walls[0].length-1);
             while ((r == 3 && c == 1) || (r == 3 && c == 3)){
                 r = random.nextInt(1,4);
             }
-            originalState = new State(originalState, r, c);
+
+             */
+            originalState = new State(originalState, startCoordinateRow, startCoordinateCol);
             solution = "";
             i++;
         }

@@ -22,7 +22,6 @@ class IRLClient {
 
         System.out.println("I am the IRL client");
 
-
         if (args.length != 0) {
             if (args[0].equalsIgnoreCase("-g")) {
                 System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out), false,
@@ -31,11 +30,11 @@ class IRLClient {
                 originalState = Parser.parseLevel(serverMessages);
                 generator = new Generator(originalState);
                 generator.writeGoalState(originalState);
-                generator.generateTrajectories(40);
+                generator.generateTrajectories((Integer.parseInt(args[2])));
+                System.out.println(Action.MoveE.name);
+                System.out.flush();
             }
         } else {
-            //Action action = Action.valueOf("MoveN");
-            //System.err.println(action.name);
             reader = new Reader();
             trajectories = reader.extractTrajectoriesInformation();
             Estimator estimator = new Estimator();
@@ -43,15 +42,22 @@ class IRLClient {
             for (int i = 0; i < rewards.weights.length; i++) {
                 System.err.println(rewards.weights[i]);
             }
-            /*
-            Trajectory[] trajectories = new Trajectory[10];
-            reader = new Reader();
-            reader.read();
-             */
+
+            Bash bashExecutor = new Bash();
+            try {
+                bashExecutor.executeCommands();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            trajectories = reader.extractTrajectoriesInformation();
+            rewards = estimator.maximumLikelihoodEstimation(trajectories);
+            for (int i = 0; i < rewards.weights.length; i++) {
+                System.err.println(rewards.weights[i]);
+            }
         }
 
-        System.out.println(Action.MoveE.name);
-        System.out.flush();
+
     }
 
 }
