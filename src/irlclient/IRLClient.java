@@ -29,6 +29,7 @@ class IRLClient {
                 serverMessages = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII));
                 originalState = Parser.parseLevel(serverMessages);
                 generator = new Generator(originalState);
+                System.err.println(originalState);
                 generator.writeGoalState(originalState);
                 generator.generateTrajectories((Integer.parseInt(args[2])));
                 System.out.println(Action.MoveE.name);

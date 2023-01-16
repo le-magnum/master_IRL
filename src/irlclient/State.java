@@ -144,8 +144,8 @@ public class State
 
             switch (action.type)
             {
-                //case NoOp:
-                  //  break;
+                case NoOp:
+                    break;
 
                 case Move:
                     this.agentRows.computeIfPresent(agent, (k,val) -> val += action.agentRowDelta);

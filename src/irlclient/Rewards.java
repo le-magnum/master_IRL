@@ -19,7 +19,7 @@ public class Rewards
 
   public void updateWeights(double[] newWeights){
     for (int i = 0; i < newWeights.length; i++) {
-      this.weights[i] = newWeights[i];
+      this.weights[i] += newWeights[i];
     }
   }
 }

@@ -36,7 +36,7 @@ public class Generator
         HashSet<State> setOfStates = vl.getSet();
 
         for (SuperState state: setOfStates) {
-            System.err.println("This is the states found" + "\n" + state.toString() );
+         //   System.err.println("This is the states found" + "\n" + state.toString() );
         }
 
         String solution = "";
@@ -52,22 +52,21 @@ public class Generator
                 Map<Integer,Action> jointAction = new HashMap<>();
                 jointAction.put(0,bestAction);
                 states[stepsInSolution] = originalState;
-                System.err.println("1. this is the state that the coming move is made on\n" + originalState);
+               // System.err.println("1. this is the state that the coming move is made on\n" + originalState);
+                //System.err.println("1.5 this is the best action: " + bestAction.name);
                 originalState = new State(originalState,jointAction);
                 solution += bestAction.name + "\n";
-                System.err.println("2. Solution iteration: " + i);
-                System.err.println("3. and this is the move this" + bestAction.name);
+                //System.err.println("2. Solution iteration: " + i);
+                // System.err.println("3. and this is the move this" + bestAction.name);
                 stepsInSolution++;
             }
             writer.addEntry(i,solution,states);
-            /*
-            int r = random.nextInt(1,originalState.walls.length-1);
-            int c = random.nextInt(1, originalState.walls[0].length-1);
-            while ((r == 3 && c == 1) || (r == 3 && c == 3)){
-                r = random.nextInt(1,4);
+            startCoordinateRow = random.nextInt(1,originalState.walls.length-1);
+            startCoordinateCol = random.nextInt(1, originalState.walls[0].length-1);
+            while (originalState.walls[startCoordinateRow][startCoordinateCol]){
+                startCoordinateRow = random.nextInt(1,originalState.walls.length-1);
+                startCoordinateCol = random.nextInt(1, originalState.walls[0].length-1);
             }
-
-             */
             originalState = new State(originalState, startCoordinateRow, startCoordinateCol);
             solution = "";
             i++;
