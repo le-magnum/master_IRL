@@ -5,10 +5,13 @@ import java.util.HashMap;
 public class Transitions
 {
     public int transitionFunction(State currentState, Action wantedAction,int agentNumber){
-        if (currentState.isGoalStateWithoutBoxes()) {
+        // for absorbing goal state
+        /*if (currentState.isGoalStateWithoutBoxes()) {
             return 0;
         }
-        else if (currentState.isApplicable(agentNumber,wantedAction)) {
+        else */
+        if (currentState.isApplicable(agentNumber,wantedAction)) {
+
             return 1;
         }
         else

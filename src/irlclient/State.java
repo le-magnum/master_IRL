@@ -225,6 +225,23 @@ public class State
         return false;
     }
 
+    public boolean noGoalState()
+    {
+        for (int row = 1; row < this.goals.length - 1; row++)
+        {
+            for (int col = 1; col < this.goals[row].length - 1; col++)
+            {
+                char goal = this.goals[row][col];
+
+                if ('0' <= goal && goal <= '9')
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public ArrayList<SuperState> getExpandedStates()
     {
         int numAgents = this.agentRows.size();

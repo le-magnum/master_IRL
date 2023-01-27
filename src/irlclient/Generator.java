@@ -24,7 +24,6 @@ public class Generator
 
     public void writeGoalState(State goal)
     {
-
         writer.addFileHeader(goal);
     }
 
@@ -33,21 +32,18 @@ public class Generator
     {
         vl.fillListOfStates(originalState);
 
-        HashSet<State> setOfStates = vl.getSet();
-
-        for (SuperState state: setOfStates) {
-         //   System.err.println("This is the states found" + "\n" + state.toString() );
-        }
-
         String solution = "";
         vl.calculateValueIteration();
         State[] states = new State[50];
-        int startCoordinateRow = originalState.agentRows.get(0);
-        int startCoordinateCol = originalState.agentCols.get(0);
+        int startCoordinateRow;
+        int startCoordinateCol;
         int i = 0;
         while (i < amountOfTrajectories){
             int stepsInSolution = 0;
             while (!originalState.isGoalStateWithoutBoxes()){
+                if (originalState.noGoalState() && stepsInSolution > 1){
+                    break;
+                }
                 Action bestAction =vl.extractPolicy(originalState);
                 Map<Integer,Action> jointAction = new HashMap<>();
                 jointAction.put(0,bestAction);
@@ -63,11 +59,11 @@ public class Generator
             writer.addEntry(i,solution,states);
             startCoordinateRow = random.nextInt(1,originalState.walls.length-1);
             startCoordinateCol = random.nextInt(1, originalState.walls[0].length-1);
-            while (originalState.walls[startCoordinateRow][startCoordinateCol]){
+            while (originalState.walls[startCoordinateRow][startCoordinateCol] || originalState.goals[startCoordinateRow][startCoordinateCol] == '0'){
                 startCoordinateRow = random.nextInt(1,originalState.walls.length-1);
                 startCoordinateCol = random.nextInt(1, originalState.walls[0].length-1);
             }
-            originalState = new State(originalState, startCoordinateRow, startCoordinateCol);
+            originalState = new State(originalState,startCoordinateRow,startCoordinateCol);
             solution = "";
             i++;
         }

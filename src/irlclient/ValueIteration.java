@@ -15,7 +15,7 @@ public class ValueIteration
 
     private HashMap<State,Float> valueMap = new HashMap<State, Float>();
 
-    private Rewards rewards;
+    private Rewards rewards = new Rewards();
 
     private Transitions transitions = new Transitions();
 
@@ -90,13 +90,12 @@ public class ValueIteration
     {
         double gemma = 0.8;
         double theta = 0.001;
-        double[] rewardWeights = new double[3];
+
         int[] stateFeatures;
-        rewardWeights[0] = -0.53;
-        rewardWeights[1] = -1.07;
-        rewardWeights[2] = 0.63;
+        int amountOfFeatures = rewards.ReadAmountOfFeatures();
+        rewards.ReadRewardWeights();
+
         double lastValue = -10000;
-        rewards = new Rewards(rewardWeights);
         setupValueFunction();
         HashMap<State,Float> qMap = new HashMap<State, Float>();
         HashSet<State> hasBeenVisited = new HashSet<>();
@@ -106,7 +105,7 @@ public class ValueIteration
             double delta = 0;
             for (State state : set) {
                 for (Action action : Action.values()) {
-                    stateFeatures = state.extractFeatures(new int[3]);
+                    stateFeatures = state.extractFeatures(new int[amountOfFeatures]);
                     double value = 0;
                     double rewardOfStateAndAction = rewards.calculateRewards(stateFeatures);
                     int t = transitions.transitionFunction(state, action, 0);
@@ -115,24 +114,39 @@ public class ValueIteration
                     State nextState = new State(state,jointAction);
                     if (t == 0 && !(state.isGoalStateWithoutBoxes())) {
                         continue;
-                    }
+                    }/*
                     if (hasBeenVisited.contains(state)){
-                        rewardOfStateAndAction = 0;
+                        rewardOfStateAndAction = rewardWeights[0];
                     }
                     if (stateFeatures[1] == 1){
-                        rewardOfStateAndAction = -0.9;
+                        rewardOfStateAndAction = rewardWeights[1];
                     }
+                    */
                     if (state.isGoalStateWithoutBoxes()){
                         value = rewards.calculateRewards(stateFeatures);
                     }
                     else {
                         value = t * (rewardOfStateAndAction + gemma * valueMap.get(nextState));
                     }
-                    //System.err.println("t = "+ t  + " reward = " +rewardOfStateAndAction +  " valueofnextstate = "
-                   //  + valueMap.get(nextState));
-                   // System.err.println("and this is the calculated value: " + value);
+                    /*
+                    if (i < 3) {
+                        for (int feature: stateFeatures) {
+                            System.err.print(feature);
+                        }
+                    System.err.println("\n" + action.name);
+                    System.err.println("t = " + t + " reward = " + rewardOfStateAndAction + " valueofnextstate = "
+                    + valueMap.get(nextState));
+                    System.err.println("and this is the calculated value: " + value);
+                    }
+                     */
                     lastValue = max(value, lastValue);
-                   // System.err.println("and this value will be put in the list: " + lastValue);
+                    /*
+                    if (i < 3) {
+                        System.err.println("and this value will be put in the list: " + lastValue);
+                        System.err.println("these calculations was for this state\n" + state);
+                    }
+
+                     */
                     qMap.put(state,(float) lastValue);
 
                 }
@@ -168,15 +182,9 @@ public class ValueIteration
         Action bestAction = null;
         for (Action action: Action.values()) {
             if (s.isApplicable(0,action)){
-                //System.err.println("this is not a problem");
                 Map<Integer,Action> jointAction = new HashMap<>();
                 jointAction.put(0,action);
                 State nextState = new State(s,jointAction);
-                //System.err.println("this is the current action i am trying to take: " + action.name);
-                //System.err.println("and this is the state:\n" + s);
-                //System.err.println("the agent is here: " + "row=" +s.agentRows.get(0) + " cols=" +s.agentCols.get(0));
-                //System.err.println("Is there a wall here: =" + s.walls[s.agentRows.get(0)][s.agentCols.get(0)]);
-                //System.err.println("is this a box goal position" + s.goals[s.agentRows.get(0)][s.agentCols.get(0)]);
                 if (valueMap.get(nextState) >=  actionValue){
                     bestAction = action;
                     actionValue = valueMap.get(nextState);
@@ -184,5 +192,9 @@ public class ValueIteration
             }
         }
         return bestAction;
+    }
+
+    public void clearSet(){
+        this.set.clear();
     }
 }

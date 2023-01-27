@@ -57,5 +57,19 @@ public class Writer
         fileWriter.close();
     }
 
+    public void addFullState(State state)
+    {
+        builder.append("#domain\n");
+        builder.append("hospital\n");
+        builder.append("#levelname\n");
+        builder.append("choice\n");
+        builder.append("#colors");
+        builder.append(state.toColorString());
+        builder.append("#initial\n");
+        builder.append(state);
+        builder.append("#goal\n");
+        builder.append(state.toGoalStateString());
+        builder.append("#end\n");
+    }
 
 }
