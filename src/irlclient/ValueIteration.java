@@ -15,7 +15,7 @@ public class ValueIteration
 
     private HashMap<State,Float> valueMap = new HashMap<State, Float>();
 
-    private Rewards rewards = new Rewards();
+    private Rewards rewards;
 
     private Transitions transitions = new Transitions();
 
@@ -46,7 +46,7 @@ public class ValueIteration
 
     public int size()
     {
-        return this.queue.size();
+        return this.set.size();
     }
 
     public void fillListOfStates(State initialState)
@@ -70,13 +70,14 @@ public class ValueIteration
         this.set.addAll(statesExplored);
 
     }
-    public void setupValueFunction(){
+    private void setupValueFunction(int amountOfFeatures){
         for (State state : set){
             if (state.isGoalStateWithoutBoxes()) {
-                float value = (float) rewards.calculateRewards(state.extractFeatures(new int[3]));
+                float value = (float) rewards.calculateRewards(state.extractFeatures(new int[amountOfFeatures]));
                 valueMap.put(state,value);
+            }else {
+                valueMap.put(state, (float) 0);
             }
-            valueMap.put(state,(float)0);
         }
     }
 
@@ -86,22 +87,28 @@ public class ValueIteration
         return set;
     }
 
-    public void calculateValueIteration()
+    public void calculateValueIteration(JParser.GenerationParametersObject parameters, boolean isTesting, Rewards testingRewards)
     {
-        double gemma = 0.8;
-        double theta = 0.001;
+
+        double gemma = parameters.getGemma();
+        double theta = parameters.getTheta();
 
         int[] stateFeatures;
-        int amountOfFeatures = rewards.ReadAmountOfFeatures();
-        rewards.ReadRewardWeights();
+        int amountOfFeatures = parameters.getRewardWeights().length;
+        rewards = new Rewards(amountOfFeatures);
+        if (!(isTesting)) {
+            rewards.updateWeights(parameters.getRewardWeights());
+        }else {
+            rewards.updateWeights(testingRewards.weights);
+        }
 
-        double lastValue = -10000;
-        setupValueFunction();
+        double lastValue = -100000000;
+        setupValueFunction(amountOfFeatures);
         HashMap<State,Float> qMap = new HashMap<State, Float>();
         HashSet<State> hasBeenVisited = new HashSet<>();
 
         int i = 0;
-        while (i < 10000 ) {
+        while (i < parameters.getIterations() ) {
             double delta = 0;
             for (State state : set) {
                 for (Action action : Action.values()) {
@@ -114,14 +121,11 @@ public class ValueIteration
                     State nextState = new State(state,jointAction);
                     if (t == 0 && !(state.isGoalStateWithoutBoxes())) {
                         continue;
-                    }/*
-                    if (hasBeenVisited.contains(state)){
-                        rewardOfStateAndAction = rewardWeights[0];
                     }
-                    if (stateFeatures[1] == 1){
-                        rewardOfStateAndAction = rewardWeights[1];
+                    /*if (hasBeenVisited.contains(state)){
+                        rewardOfStateAndAction = rewards.weights[0];
                     }
-                    */
+                     */
                     if (state.isGoalStateWithoutBoxes()){
                         value = rewards.calculateRewards(stateFeatures);
                     }
@@ -165,7 +169,7 @@ public class ValueIteration
                 delta = max(delta, abs(qMap.get(state) - valueMap.get(state)));
                // System.err.println("Theta is " + theta + " delta is " + delta);
                 //System.err.println("---------------------------next state----------------------");
-                lastValue = -10000;
+                lastValue = -1000000000;
                 hasBeenVisited.add(state);
             }
             valueMap.putAll(qMap);
@@ -178,7 +182,7 @@ public class ValueIteration
         }
     }
     public Action extractPolicy(State s){
-        float actionValue = -10000;
+        float actionValue = -1000000000;
         Action bestAction = null;
         for (Action action: Action.values()) {
             if (s.isApplicable(0,action)){
@@ -196,5 +200,15 @@ public class ValueIteration
 
     public void clearSet(){
         this.set.clear();
+    }
+
+    public double RewardOfState(State state, int AmountOfFeatures){
+        int[] stateFeatures = state.extractFeatures(new int[AmountOfFeatures]);
+        double reward = this.rewards.calculateRewards(stateFeatures);
+        return reward;
+    }
+
+    public void setGenerationRewards(JParser.GenerationParametersObject parameters){
+        this.rewards.weights = parameters.getRewardWeights();
     }
 }

@@ -28,7 +28,7 @@ public class Bash {
         printWriter.println("#!/bin/bash");
         printWriter.println("cd ..");
         printWriter.println("cd src");
-        printWriter.println("java -jar ../out/server.jar -c \"java -cp .:../lib/json-simple-1.1.1.jar irlclient/IRLClient -g -n 1\" -l \"../levels/irltest/choice.lvl\" ");
+        printWriter.println("java -jar ../out/server.jar -c \"java -cp .:../lib/json-simple-1.1.1.jar irlclient/IRLClient -n\" -l \"../levels/irltest/choice.lvl\" ");
 
         printWriter.close();
 

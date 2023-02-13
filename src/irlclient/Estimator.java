@@ -3,7 +3,7 @@ package irlclient;
 import java.util.*;
 
 public class Estimator {
-    private final Rewards rewards = new Rewards();
+    private Rewards rewards;
 
     private final ValueIteration vl = new ValueIteration();
 
@@ -29,17 +29,18 @@ public class Estimator {
     private final HashMap<Trajectory, Double> trajectoryProbability = new HashMap<>();
 
 
-    public Rewards maximumLikelihoodEstimation(Trajectory[] trajectories) {
+    public Rewards maximumLikelihoodEstimation(Trajectory[] trajectories, JParser.EstimationParameters parameters) {
         vl.fillListOfStates(trajectories[0].getStates()[0]);
         HashSet<State> states = vl.getSet();
 
-        double gemma = 0.9;
-        double boltzTemp = 0.75;
-        double stepSize = 1;
-        int amountOfFeatures = rewards.ReadAmountOfFeatures();
+        rewards = new Rewards(JParser.getAmountOfFeatures());
+        double gemma = parameters.getGemma();
+        double boltzmannTemp = parameters.getBoltzmannTemperature();
+        double stepSize = parameters.getStepSize();
+        int amountOfFeatures = JParser.getAmountOfFeatures();
         int[] stateFeatures = new int[amountOfFeatures];
-        int n = 100;
-        int k = 100;
+        int n = parameters.getEstimationIterations();
+        int k = parameters.getValueIterations();
         double[] likelihoodWeights = new double[amountOfFeatures];
         setupEstimationTables(states, rewards, stateFeatures);
         double previousLikelihood = -1000;
@@ -90,7 +91,7 @@ public class Estimator {
                     for (Action action : Action.values()) {
                         StateActionPair permutation = new StateActionPair(pair.getKey().getState(), action);
                         if (qEstimations.containsKey(permutation)) {
-                            z += Math.exp(boltzTemp * qEstimations.get(permutation));
+                            z += Math.exp(boltzmannTemp * qEstimations.get(permutation));
                         }
                     }
                     zValues.put(pair.getKey().getState(), z);
@@ -105,8 +106,8 @@ public class Estimator {
                             if (qEstimations.containsKey(stateActionPair)) {
                                 int transition = transitions.transitionFunction(stateActionPair.getState(), stateActionPair.getAction(), 0);
                                 stateFeatures = stateActionPair.getState().extractFeatures(new int[amountOfFeatures]);
-                                double diffZVal = boltzTemp *
-                                        Math.exp(boltzTemp * qEstimations.get(stateActionPair)) * (stateFeatures[j] + gemma
+                                double diffZVal = boltzmannTemp *
+                                        Math.exp(boltzmannTemp * qEstimations.get(stateActionPair)) * (stateFeatures[j] + gemma
                                         * transition *
                                         valueDifferentiated.get(transitions.nextState(stateActionPair.getState(),
                                                 stateActionPair.getAction()))[j]);
@@ -118,7 +119,7 @@ public class Estimator {
                 }
                 for (Map.Entry<StateActionPair, Double> pair : qEstimations.entrySet()) {
                     // the policy $\pi(s,a)$
-                    double policyValue = Math.exp(boltzTemp * qEstimations.get(pair.getKey())) /
+                    double policyValue = Math.exp(boltzmannTemp * qEstimations.get(pair.getKey())) /
                             zValues.get(pair.getKey().getState());
                     policyValues.put(pair.getKey(), policyValue);
                 }
@@ -129,11 +130,11 @@ public class Estimator {
                     for (int j = 0; j < stateFeatures.length; j++) {
                         double zValue = zValues.get(pair.getKey().getState());
                         double zDiff = zValuesDifferentiated.get(pair.getKey().getState())[j];
-                        double exp = Math.exp(boltzTemp * qEstimations.get(pair.getKey()));
+                        double exp = Math.exp(boltzmannTemp * qEstimations.get(pair.getKey()));
                         double qDiff = estimationDifferentiated.get(pair.getKey())[j];
-                        double value = (boltzTemp * zValue * exp * qDiff -
+                        double value = (boltzmannTemp * zValue * exp * qDiff -
                                 exp * zDiff) / Math.pow(zValue, 2);
-                        policyDifferentiated.get(pair.getKey())[j] = (boltzTemp * zValue * exp * qDiff -
+                        policyDifferentiated.get(pair.getKey())[j] = (boltzmannTemp * zValue * exp * qDiff -
                                 exp * zDiff) / Math.pow(zValue, 2);
 
                     }
@@ -193,14 +194,24 @@ public class Estimator {
                             policyChainRule += 1 / this.policyValues.get(trajectoryPair) *
                                     policyDifferentiated.get(trajectoryPair)[j];
                         }
-                        likelihoodDifferentiated = policyChainRule * trajectoryProbability.get(trajectories[g]);
+                        likelihoodDifferentiated += policyChainRule * trajectoryProbability.get(trajectories[g]);
                     }
+                    double[] previousLikelihoods = new double[amountOfFeatures];
+                    double difference = 0;
+                    for (int l = 0; l < likelihoodWeights.length; l++) {
+                        previousLikelihoods[l] = likelihoodWeights[l];
+                        difference = Math.max(previousLikelihoods[l],difference);
+                    }
+                    System.err.println("This is the max difference in value from this iterations to last iterations: " + difference );
                     //if (logLikelihood >= previousLikelihood && logLikelihood != 0) {
                     likelihoodWeights[j] = likelihoodDifferentiated;
                     previousLikelihood = logLikelihood;
                     //}
                 }
                 logLikelihood = 0;
+                System.err.println(t);
+                System.err.println(i);
+
             }
             for (int i = 0; i < likelihoodWeights.length; i++) {
                 likelihoodWeights[i] = likelihoodWeights[i] * stepSize;
@@ -235,7 +246,7 @@ public class Estimator {
                 individualFeatures[j] = i;
                 j++;
             }
-            this.valueDifferentiated.put(state, new double[features.length]);
+            this.valueDifferentiated.put(state, individualFeatures);
         }
     }
 
@@ -268,20 +279,19 @@ public class Estimator {
         this.vl.clearSet();
     }
 
-    public double getLogLikelihoodForTestTrajectories(Trajectory[] trajectories) {
+    public double getLogLikelihoodForTestTrajectories(Trajectory[] trajectories, JParser.EstimationParameters parameters) {
         vl.fillListOfStates(trajectories[0].getStates()[0]);
         HashSet<State> states = vl.getSet();
 
-        double[] rrewards = new double[3];
-        rrewards[0] = 0;
-        rrewards[1] = 0;
-        rrewards[2] = 0;
+        double[] rrewards = new double[JParser.getAmountOfFeatures()];
+        for (int i = 0; i < rrewards.length; i++) {
+            rrewards[i] = 0;
+        }
         rewards.updateWeights(rrewards);
 
-        double gemma = 1;
-        double boltzTemp = 1;
-        double stepSize = 1;
-        int amountOfFeatures = rewards.ReadAmountOfFeatures();
+        double gemma = parameters.getGemma();
+        double boltzTemp = parameters.getBoltzmannTemperature();
+        int amountOfFeatures = JParser.getAmountOfFeatures();
         int[] stateFeatures = new int[amountOfFeatures];
         double[] likelihoodWeights = new double[amountOfFeatures];
         setupEstimationTables(states, rewards, stateFeatures);

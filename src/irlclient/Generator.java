@@ -2,7 +2,6 @@ package irlclient;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 
@@ -27,20 +26,20 @@ public class Generator
         writer.addFileHeader(goal);
     }
 
-    public void generateTrajectories(int amountOfTrajectories)
+    public void generateTrajectories(JParser.GenerationParametersObject parameters, int amountOfTrajectories)
     throws IOException
     {
         vl.fillListOfStates(originalState);
 
         String solution = "";
-        vl.calculateValueIteration();
+        vl.calculateValueIteration(parameters, false, null);
         State[] states = new State[50];
         int startCoordinateRow;
         int startCoordinateCol;
         int i = 0;
         while (i < amountOfTrajectories){
             int stepsInSolution = 0;
-            while (!originalState.isGoalStateWithoutBoxes()){
+            while (!originalState.isGoalStateWithoutBoxes() && stepsInSolution < states.length-1){
                 if (originalState.noGoalState() && stepsInSolution > 1){
                     break;
                 }

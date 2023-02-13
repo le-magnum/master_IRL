@@ -269,6 +269,11 @@ public class State
         for (Map.Entry<Integer,Integer> entry : agentRows.entrySet()) {
             actionsPermutation.put(entry.getKey(),0);
         }
+        /* absorbing end state?
+        if (this.isGoalStateWithoutBoxes()){
+            return new ArrayList<SuperState>(0);
+        }
+        */
         ArrayList<SuperState> expandedStates = new ArrayList<>(16);
         while (true)
         {
@@ -321,28 +326,63 @@ public class State
 
     public int[] featureIdentification(int agent, int[] emptyFeatures)
     {
-        //normal tile will be overridden if agent is either on goal or box goal.
+        //The movement const is applied here to make sure the agent will always move towards its goal.
         emptyFeatures[0] = 1;
-        for (int row = 1; row < this.goals.length - 1; row++)
-        {
-            for (int col = 1; col < this.goals[row].length - 1; col++)
-            {
-                char goal = this.goals[row][col];
+        int k = emptyFeatures.length-3;
+        int row = this.agentRows.get(agent);
+        int col = this.agentCols.get(agent);
 
-                if ('A' <= goal && goal <= 'Z' && this.agentRows.get(agent) == row && this.agentCols.get(agent) == col)
-                {
-                    emptyFeatures[0] = 0;
-                    emptyFeatures[1] = 1;
+        char goal = this.goals[row][col];
 
+                switch (goal) {
+                    case 'A':
+                        emptyFeatures[0%k+2]=1;
+                        if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }
+                        break;
+                    case 'B':
+                        emptyFeatures[1%k+2]=1;
+                         if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }
+                         break;
+                    case 'C':
+                        emptyFeatures[2%k+2]=1;
+                         if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }break;
+                    case 'D':
+                        emptyFeatures[3%k+2]=1;
+                         if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }break;
+                    case 'E':
+                        emptyFeatures[4%k+2]=1;
+                         if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }break;
+                    case 'F':
+                        emptyFeatures[5%k+2]=1;
+                         if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }break;
+                    case 'G':
+                         if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }emptyFeatures[6%k+2]=1;
+                        break;
+                    case '0':
+                        emptyFeatures[emptyFeatures.length-1]=1;
+                        emptyFeatures[0] = 0;
+                        break;
+                    default:
+                        // normal time (grey tile)
+                        emptyFeatures[1] = 1;
+                        if (this.noGoalState()){
+                            emptyFeatures[0]=0;
+                        }
                 }
-                else if ('0' <= goal && goal <= '9' &&
-                         (this.agentRows.get(goal - '0') == row && this.agentCols.get(goal - '0') == col))
-                {
-                    emptyFeatures[0] = 0;
-                    emptyFeatures[2] = 1;
-                }
-            }
-        }
         return emptyFeatures;
     }
 
@@ -367,6 +407,11 @@ public class State
         int destColAgent;
         int destRowBox;
         int destColBox;
+        /* absorbing end state?
+        if (this.isGoalStateWithoutBoxes()){
+            return false;
+        }
+         */
         switch (action.type) {
             case NoOp:
                 return true;
@@ -879,6 +924,12 @@ public class State
         for (String str: strings) {
             String[] tempWords = str.split(":");
             String previousColor = tempWords[0];
+
+            if (previousColor.equals("null")){
+                tempWords[0] = "Blue";
+                previousColor = "Blue";
+            }
+
             for (String colorAndEntity : tempWords) {
                 if (!seenStrings.contains(colorAndEntity)) {
                     if (colorAndEntity.equals(Color.valueOf(previousColor).toString())) {

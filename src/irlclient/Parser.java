@@ -280,3 +280,4 @@ public class Parser {
         return new State(agentRows, agentCols, agentColors, walls, boxes, boxColors, goals);
     }
 }
+

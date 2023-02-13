@@ -1,8 +1,27 @@
 {
-  "amountOfFeatures" : 3,
-  "weightValues": [
-    -0.05,
-    -0.4,
-     1.3
-]
+  "runGeneration" : false,
+  "runActiveLearning": false,
+  "runTesting" : true,
+  "amountOfFeatures" : 4,
+  "generationParameters": [
+    {"iterations": 10000} ,
+    {"thetaValue" : 0.001 } ,
+    {"gemma": 0.7} ,
+    {"amountOfTrajectories": 100},
+    {
+      "weightValues": [
+         -5,
+         -1,
+         -3,
+          5
+      ]
+    }
+  ],
+  "estimatorParameters": [
+    {"estimationIterations": 10} ,
+    {"valueIterations": 100} ,
+    {"gemma": 0.8} ,
+    {"boltzmannTemperature": 0.9} ,
+    {"stepSize": 1}
+  ]
 }
